@@ -3,16 +3,23 @@ import string
 import statistics
 import math
 import gender_guesser.detector as gender
+import matplotlib.pyplot as plt
+from scipy import stats
 d = gender.Detector(case_sensitive=False)
 translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
 # print(d.get_gender("None"))
 # print(d.get_gender(u"William"))
 # file = 'AMAZON_FASHION_5.json'
+
+# DATASETS FOUND HERE: https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/
+# Download "Small" subsets for experimentation -> 5-core 
+
 file = 'Movies_and_TV_5.json'
 
 # data format: (rating, gender)
 data = []
+
 
 # alt_data formate: asin : [(rating, gender), ...]
 alt_data = {}
@@ -42,9 +49,33 @@ print(f"Number of males: {sum(1 for row in data if row[1] == 'M')}")
 print(f"Number of females: {sum(1 for row in data if row[1] == 'F')}")
 print(f"Number of androgynous: {sum(1 for row in data if row[1] == 'A')}")
 
-print(f"Average rating of males: {statistics.fmean(row[0] for row in data if row[1] == 'M')}")
-print(f"Average rating of females: {statistics.fmean(row[0] for row in data if row[1] == 'F')}")
-print(f"Average rating of androgynous: {statistics.fmean(row[0] for row in data if row[1] == 'A')}")
+#ISHA
+male_ratings = [row[0] for row in data if row[1] == 'M']
+female_ratings = [row[0] for row in data if row[1] == 'F']
+andro_ratings = [row[0] for row in data if row[1] == 'A']
+
+print(f"Average rating of males: {statistics.fmean(male_ratings)}")
+print(f"Average rating of females: {statistics.fmean(female_ratings)}")
+print(f"Average rating of androgynous: {statistics.fmean(andro_ratings)}")
+
+# ISHA analyzing distribution of review ratings for each gender group 
+male_rating_counts = [sum(1 for rating in male_ratings if rating == i) for i in range(1, 6)]
+female_rating_counts = [sum(1 for rating in female_ratings if rating == i) for i in range(1, 6)]
+andro_rating_counts = [sum(1 for rating in andro_ratings if rating == i) for i in range(1, 6)]
+
+# isha visualizing the distribution of review ratings 
+plt.figure(figsize=(10,6))
+x = range(1,6)
+width = 0.25
+plt.bar([i - width for i in x], male_rating_counts, width, label = 'Male')
+plt.bar(x, female_rating_counts, width, label = 'Female')
+plt.bar([i + width for i in x], andro_rating_counts, width, label = 'Androgynous')
+plt.xlabel('Rating')
+plt.ylabel('Count')
+plt.title('Distribution of Review Ratings by Gender')
+plt.legend()
+plt.xticks(x)
+plt.show()
 
 # Diff between male and female ratings per product
 alt_data_diff = []
@@ -65,3 +96,21 @@ for key in alt_data:
 
 print(f"Average diff between M and F ratings per product is: {statistics.fmean(alt_data_diff)}")
 # print(alt_data_diff)
+
+# ISHA t - test to quanity the significance of gender differences 
+t_stat, p_value = stats.ttest_ind(male_ratings, female_ratings)
+print(f"T-test results:")
+print(f"T-statistic: {t_stat}")
+print(f"P-value: {p_value}")
+
+# ISHA now we need to analyze gender bias across different product categories visualzie
+plt.figure(figsize=(8, 6))
+plt.hist(male_ratings, bins=20, alpha=0.5, label='Male', color='blue')
+plt.hist(female_ratings, bins=20, alpha=0.5, label='Female', color='red')
+plt.axvline(statistics.fmean(male_ratings), color='blue', linestyle='dashed', linewidth=2)
+plt.axvline(statistics.fmean(female_ratings), color='red', linestyle='dashed', linewidth=2)
+plt.xlabel('Rating')
+plt.ylabel('Frequency')
+plt.title(f"T-test Results\nT-statistic: {t_stat:.2f}, P-value: {p_value:.4f}")
+plt.legend()
+plt.show()
