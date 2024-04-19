@@ -202,5 +202,7 @@ def sentiment_analysis():
     print("# of Negative Reviews by Males:", len(negative_reviews_male))
     print("# of Negative Reviews by Females:", len(negative_reviews_female))
 
+
+####### Add functions here #######
 if __name__ == "__main__":
     sentiment_analysis()
