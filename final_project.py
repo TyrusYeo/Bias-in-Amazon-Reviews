@@ -9,10 +9,14 @@ from scipy import stats
 from stop_words import get_stop_words
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk.tokenize import word_tokenize
+import pandas as pd
+import seaborn as sns
 
 stop_words = get_stop_words('en')
 d = gender.Detector(case_sensitive=False)
 nltk.download('vader_lexicon') # Download the VADER lexicon resource
+nltk.download('punkt')
 translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
 # print(d.get_gender("None"))
@@ -202,7 +206,61 @@ def sentiment_analysis():
     print("# of Negative Reviews by Males:", len(negative_reviews_male))
     print("# of Negative Reviews by Females:", len(negative_reviews_female))
 
+def review_word_length():
+    df = pd.DataFrame(data)
+    df.columns = ["Overall_Rating", "Gender", "Review_Text"]
+    
+    male_reviews = df[df['Gender'] == 'M']['Review_Text']
+    # Tokenize each review text into words and calculate word lengths
+    word_lengths_male = male_reviews.apply(lambda text: [len(word) for word in word_tokenize(text.lower())])
+    # Calculate the average word length for male reviewers
+    avg_word_length_male = sum(word_lengths_male.sum()) / word_lengths_male.size
+
+    female_reviews = df[df['Gender'] == 'F']['Review_Text']
+    # Tokenize each review text into words and calculate word lengths
+    word_lengths_female = female_reviews.apply(lambda text: [len(word) for word in word_tokenize(text.lower())])
+    # Calculate the average word length for male reviewers
+    avg_word_length_female = sum(word_lengths_female.sum()) / word_lengths_female.size
+
+
+    # Compute average review word length for each gender
+    avg_word_length_by_gender = pd.DataFrame({
+        'Gender': ['Male', 'Female'],
+        'Avg_Word_Length': [avg_word_length_male, avg_word_length_female]
+    })
+
+    # Create a boxplot to visualize the distribution of average review word length by gender
+    plt.figure(figsize=(8, 6))
+    sns.boxplot(x='Gender', y='Avg_Word_Length', data=avg_word_length_by_gender)
+    plt.title('Distribution of Average Review Word Length by Gender')
+    plt.xlabel('Gender')
+    plt.ylabel('Average Word Length')
+    plt.show()
+
+
+    # Group by gender and calculate the average review star rating and average review word length
+    avg_review_stats_by_gender = df.groupby('Gender').agg({
+        'Overall_Rating': 'mean',  # Average review star rating
+        'Review_Word_Length': 'mean'  # Average review word length
+    }).reset_index()
+
+    # Rename columns for clarity
+    avg_review_stats_by_gender.columns = ['Gender', 'Avg_Review_Star_Rating', 'Avg_Review_Word_Length']
+
+    # Create a scatter plot to visualize the correlation between review star rating and average review word length by gender
+    plt.figure(figsize=(8, 6))
+    sns.scatterplot(x='Avg_Review_Star_Rating', y='Avg_Review_Word_Length', hue='Gender', data=avg_review_stats_by_gender)
+    plt.title('Correlation between Review Star Rating and Average Review Word Length by Gender')
+    plt.xlabel('Review Star Rating')
+    plt.ylabel('Average Word Length')
+    plt.legend(title='Gender')
+    plt.show()
+
+def preprocess_text(text):
+    tokens = word_tokenize(text.lower())  # Tokenize and convert to lowercase
+    tokens = [token for token in tokens if token.isalnum() and token not in stop_words]  # Remove punctuation and stopwords
+    return tokens
 
 ####### Add functions here #######
 if __name__ == "__main__":
-    sentiment_analysis()
+    review_word_length()
