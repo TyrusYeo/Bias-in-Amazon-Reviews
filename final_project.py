@@ -4,7 +4,11 @@ import statistics
 import math
 import gender_guesser.detector as gender
 import matplotlib.pyplot as plt
+from collections import Counter
 from scipy import stats
+from stop_words import get_stop_words
+
+stop_words = get_stop_words('en')
 d = gender.Detector(case_sensitive=False)
 translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
@@ -17,7 +21,7 @@ translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
 file = 'Movies_and_TV_5.json'
 
-# data format: (rating, gender)
+# data format: (rating, gender, reviewText)
 data = []
 
 
@@ -39,7 +43,7 @@ with open(file, 'r') as fp:
         elif reveiwer_gender == 'andy':
             reveiwer_gender = 'A'
         if reveiwer_gender != 'unknown':
-            data.append([float(review_dict['overall']), reveiwer_gender])
+            data.append([float(review_dict['overall']), reveiwer_gender, review_dict['reviewText'] if 'reviewText' in review_dict else ""])
             if review_dict['asin'] not in alt_data:
                 alt_data[review_dict['asin']] = []
             alt_data[review_dict['asin']].append([float(review_dict['overall']), reveiwer_gender])
@@ -114,3 +118,37 @@ plt.ylabel('Frequency')
 plt.title(f"T-test Results\nT-statistic: {t_stat:.2f}, P-value: {p_value:.4f}")
 plt.legend()
 plt.show()
+
+
+# DOVIE - Word Frequency Analysis
+
+# male_review_texts = [row[2] for row in data if row[1] == 'M']
+# female_review_texts = [row[2] for row in data if row[1] == 'F']
+
+male_review_words = []
+female_review_words = []
+
+for row in data:
+    if row[1] == 'M':
+        male_review_words += filter(lambda i: i not in stop_words, row[2].translate(str.maketrans('', '', string.punctuation)).lower().split())
+    elif row[1] == 'F':
+        female_review_words += filter(lambda i: i not in stop_words, row[2].translate(str.maketrans('', '', string.punctuation)).lower().split())
+
+male_word_freq = Counter(male_review_words)
+female_word_freq = Counter(female_review_words)
+
+
+sorted_male_word_freq = sorted(male_word_freq.items(), key= lambda x: x[1], reverse=True)
+sorted_female_word_freq = sorted(female_word_freq.items(), key= lambda x: x[1], reverse=True)
+
+NUM_TOP_RESULTS = 25
+top_male_words = sorted_male_word_freq[:NUM_TOP_RESULTS]
+top_female_words = sorted_female_word_freq[:NUM_TOP_RESULTS]
+
+print("TOP MALE WORDS BY FREQUENCY: ")
+for word in top_male_words:
+    print(f"{word[0]}: {word[1]}")
+
+print("TOP FEMALE WORDS BY FREQUENCY: ")
+for word in top_female_words:
+    print(f"{word[0]}: {word[1]}")
