@@ -9,7 +9,6 @@ from scipy import stats
 from stop_words import get_stop_words
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
-from nltk.tokenize import word_tokenize
 import pandas as pd
 import seaborn as sns
 
@@ -107,11 +106,6 @@ def t_test():
     plt.show()
 
 
-
-
-
-
-
 def diff_ratings_per_prodct():
     # Diff between male and female ratings per product
     alt_data_diff = []
@@ -207,45 +201,42 @@ def sentiment_analysis():
     print("# of Negative Reviews by Females:", len(negative_reviews_female))
 
 def review_word_length():
+    print("Reviewing word length")
     df = pd.DataFrame(data)
     df.columns = ["Overall_Rating", "Gender", "Review_Text"]
     
     male_reviews = df[df['Gender'] == 'M']['Review_Text']
-    # Tokenize each review text into words and calculate word lengths
-    word_lengths_male = male_reviews.apply(lambda text: [len(word) for word in word_tokenize(text.lower())])
-    # Calculate the average word length for male reviewers
-    avg_word_length_male = sum(word_lengths_male.sum()) / word_lengths_male.size
-
     female_reviews = df[df['Gender'] == 'F']['Review_Text']
-    # Tokenize each review text into words and calculate word lengths
-    word_lengths_female = female_reviews.apply(lambda text: [len(word) for word in word_tokenize(text.lower())])
-    # Calculate the average word length for male reviewers
-    avg_word_length_female = sum(word_lengths_female.sum()) / word_lengths_female.size
-
+    avg_rev_length_male = calc_avg_review_length(male_reviews)
+    avg_rev_length_female = calc_avg_review_length(female_reviews)
 
     # Compute average review word length for each gender
     avg_word_length_by_gender = pd.DataFrame({
         'Gender': ['Male', 'Female'],
-        'Avg_Word_Length': [avg_word_length_male, avg_word_length_female]
+        'Avg_Review_Length': [avg_rev_length_male, avg_rev_length_female]
     })
 
     # Create a boxplot to visualize the distribution of average review word length by gender
     plt.figure(figsize=(8, 6))
-    sns.boxplot(x='Gender', y='Avg_Word_Length', data=avg_word_length_by_gender)
+    plt.bar(avg_word_length_by_gender['Gender'], avg_word_length_by_gender['Avg_Review_Length'], color=['blue', 'pink'])
     plt.title('Distribution of Average Review Word Length by Gender')
     plt.xlabel('Gender')
-    plt.ylabel('Average Word Length')
+    plt.ylabel('Average Review Length')
     plt.show()
 
+    male_overal_rating = df[df['Gender'] == 'M']["Overall_Rating"]
+    female_overal_rating = df[df['Gender'] == 'F']["Overall_Rating"]
+   
+    avg_male_overal_rating = male_overal_rating.mean()
+    avg_female_overal_rating = female_overal_rating.mean()
 
+    print("Calculating average review stats by gender with word length")
     # Group by gender and calculate the average review star rating and average review word length
-    avg_review_stats_by_gender = df.groupby('Gender').agg({
-        'Overall_Rating': 'mean',  # Average review star rating
-        'Review_Word_Length': 'mean'  # Average review word length
-    }).reset_index()
-
-    # Rename columns for clarity
-    avg_review_stats_by_gender.columns = ['Gender', 'Avg_Review_Star_Rating', 'Avg_Review_Word_Length']
+    avg_review_stats_by_gender = pd.DataFrame({
+        'Gender': ['Male', 'Female'],
+        'Avg_Review_Star_Rating': [avg_male_overal_rating, avg_female_overal_rating],
+        'Avg_Review_Word_Length': [avg_rev_length_male, avg_rev_length_female],
+    })
 
     # Create a scatter plot to visualize the correlation between review star rating and average review word length by gender
     plt.figure(figsize=(8, 6))
@@ -256,10 +247,19 @@ def review_word_length():
     plt.legend(title='Gender')
     plt.show()
 
-def preprocess_text(text):
-    tokens = word_tokenize(text.lower())  # Tokenize and convert to lowercase
-    tokens = [token for token in tokens if token.isalnum() and token not in stop_words]  # Remove punctuation and stopwords
-    return tokens
+def calc_avg_review_length(review_texts):
+    print("Started calculating average word length")
+    # Tokenize each review text into words and calculate word lengths
+    word_lengths = review_texts.apply(lambda text: len(text.split()))
+    # Calculate the total sum of word lengths
+    total_sum = word_lengths.sum()
+    # Calculate the total number of reviews
+    total_count = word_lengths.size
+    # Calculate the average word length
+    avg_review_length = total_sum / total_count
+
+    return avg_review_length
+
 
 ####### Add functions here #######
 if __name__ == "__main__":
