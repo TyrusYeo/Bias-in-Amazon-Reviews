@@ -11,6 +11,7 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import pandas as pd
 import seaborn as sns
+import numpy as np
 
 stop_words = get_stop_words('en')
 d = gender.Detector(case_sensitive=False)
@@ -18,14 +19,12 @@ nltk.download('vader_lexicon') # Download the VADER lexicon resource
 nltk.download('punkt')
 translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
-# print(d.get_gender("None"))
-# print(d.get_gender(u"William"))
-file = 'AMAZON_FASHION_5.json'
+# file = 'AMAZON_FASHION_5.json'
 
 # DATASETS FOUND HERE: https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/
 # Download "Small" subsets for experimentation -> 5-core 
 
-# file = 'Movies_and_TV_5.json'
+file = 'Movies_and_TV_5.json'
 
 # data format: (rating, gender, reviewText)
 data = []
@@ -134,12 +133,17 @@ def word_frequency():
 
     male_review_words = []
     female_review_words = []
+    total_male_words = 0
+    total_female_words = 0
 
     for row in data:
+        string_to_add =  [x for x in row[2].translate(str.maketrans('', '', string.punctuation)).lower().split() if x not in stop_words]
         if row[1] == 'M':
-            male_review_words += filter(lambda i: i not in stop_words, row[2].translate(str.maketrans('', '', string.punctuation)).lower().split())
+            male_review_words += string_to_add
+            total_male_words += len(string_to_add)
         elif row[1] == 'F':
-            female_review_words += filter(lambda i: i not in stop_words, row[2].translate(str.maketrans('', '', string.punctuation)).lower().split())
+            female_review_words += string_to_add
+            total_female_words += len(string_to_add)
 
     male_word_freq = Counter(male_review_words)
     female_word_freq = Counter(female_review_words)
@@ -148,17 +152,31 @@ def word_frequency():
     sorted_male_word_freq = sorted(male_word_freq.items(), key= lambda x: x[1], reverse=True)
     sorted_female_word_freq = sorted(female_word_freq.items(), key= lambda x: x[1], reverse=True)
 
-    NUM_TOP_RESULTS = 25
+    NUM_TOP_RESULTS = 15
     top_male_words = sorted_male_word_freq[:NUM_TOP_RESULTS]
     top_female_words = sorted_female_word_freq[:NUM_TOP_RESULTS]
 
-    print("TOP MALE WORDS BY FREQUENCY: ")
-    for word in top_male_words:
-        print(f"{word[0]}: {word[1]}")
+    # ind = []
+    # width = 0.4
 
-    print("TOP FEMALE WORDS BY FREQUENCY: ")
-    for word in top_female_words:
-        print(f"{word[0]}: {word[1]}")
+    top_male_word_set = set([item[0] for item in top_male_words])
+    top_female_word_set = set([item[0] for item in  top_female_words])
+
+    top_word_set = top_male_word_set.union(top_female_word_set)
+
+    fig, ax = plt.subplots()
+    width = 0.3
+
+
+    ax.barh(np.arange(len(top_word_set)), [(100 * male_word_freq[x] / total_male_words) for x in top_word_set], width, color='blue', label='M')
+    ax.barh(np.arange(len(top_word_set))+width, [(100 * female_word_freq[x] / total_female_words) for x in top_word_set], width, color='pink', label='F')
+    # ax.set_yticks(y_pos, labels=people)
+    ax.invert_yaxis()  # labels read top-to-bottom
+    ax.set(yticks=np.arange(len(top_word_set)) + width/2, yticklabels=top_word_set, ylim=[2*width - 1, len(top_word_set)])
+    ax.set_xlabel('Percentage of total words')
+    ax.set_title('Word Frequencies by Gender')
+
+    plt.show()
 
 def sentiment_analysis():
     # TYRUS - Sentiment analysis 
@@ -267,3 +285,4 @@ if __name__ == "__main__":
     diff_ratings_per_prodct()
     sentiment_analysis()
     review_word_length()
+    word_frequency()
