@@ -20,12 +20,12 @@ translator = str.maketrans(string.punctuation, ' ' * len(string.punctuation))
 
 # print(d.get_gender("None"))
 # print(d.get_gender(u"William"))
-# file = 'AMAZON_FASHION_5.json'
+file = 'AMAZON_FASHION_5.json'
 
 # DATASETS FOUND HERE: https://cseweb.ucsd.edu/~jmcauley/datasets/amazon_v2/
 # Download "Small" subsets for experimentation -> 5-core 
 
-file = 'Movies_and_TV_5.json'
+# file = 'Movies_and_TV_5.json'
 
 # data format: (rating, gender, reviewText)
 data = []
@@ -104,7 +104,6 @@ def t_test():
     plt.title(f"T-test Results\nT-statistic: {t_stat:.2f}, P-value: {p_value:.4f}")
     plt.legend()
     plt.show()
-
 
 def diff_ratings_per_prodct():
     # Diff between male and female ratings per product
@@ -263,4 +262,8 @@ def calc_avg_review_length(review_texts):
 
 ####### Add functions here #######
 if __name__ == "__main__":
+    visualize_distribution()
+    t_test()
+    diff_ratings_per_prodct()
+    sentiment_analysis()
     review_word_length()
